@@ -102,7 +102,7 @@
 
         const li = document.createElement('li');
         li.innerHTML = `
-          <a href="${blobUrl}" target="_blank">${file.path}</a>
+          <a href="${blobUrl}" target="_blank">${file.path.replace(/^notas\//,'')}</a>
           <div class="meta">Última modificación: --</div>
           <div class="snippet">${snippet}</div>
         `;
