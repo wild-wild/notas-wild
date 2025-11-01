@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="es">
+    <head>
+        <meta charset="utf-8" />
+        <title>📚 Mis Notas</title>
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <style>
+    body {
+      font-family: -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+      margin:0 auto;
+      max-width:900px;
+      padding:2rem;
+      line-height:1.6;
+      background: #f9f9f9;
+    }
+    h1 { color:#0969da; }
+    ul { list-style:none; padding-left:0; }
+    li { background:white; margin:0.5rem 0; padding:1rem; border-radius:8px; box-shadow:0 2px 4px rgba(0,0,0,0.1); }
+    a { color:#0969da; text-decoration:none; font-weight:600; }
+    a:hover { text-decoration:underline; }
+    .meta { font-size:.8rem; color:#586069; margin-top:0.25rem; }
+    .snippet { font-size:.9rem; color:#333; margin-top:0.5rem; }
+  </style>
+    </head>
+    <body>
+        <h1>📂 Índice de Notas</h1>
+        <p>Lista de archivos .md con fecha y preview de contenido.</p>
+        <ul id="lista"></ul>
+
+        <script>
+    const USER = 'wild-wild';
+    const REPO = 'notas-wild';
+
+    async function obtenerMD() {
+      const treeRes = await fetch(`https://api.github.com/repos/${USER}/${REPO}/git/trees/main?recursive=1`);
+      const treeJson = await treeRes.json();
+      const mdFiles = treeJson.tree.filter(f => f.path.endsWith('.md') && f.path !== 'README.md')
+                                   .sort((a,b) => a.path.localeCompare(b.path));
+
+      const lista = document.getElementById('lista');
+
+      for (const file of mdFiles) {
+        const rawUrl = `https://raw.githubusercontent.com/${USER}/${REPO}/main/${file.path}`;
+        const blobUrl = `https://github.com/${USER}/${REPO}/blob/main/${file.path}`;
+        const contentRes = await fetch(rawUrl);
+        const contentText = await contentRes.text();
+        const snippet = contentText.split('\n').slice(0,3).join(' ') + '...';
+
+        const li = document.createElement('li');
+        li.innerHTML = `
+          <a href="${blobUrl}" target="_blank">${file.path}</a>
+          <div class="meta">Última modificación: --</div>
+          <div class="snippet">${snippet}</div>
+        `;
+        lista.appendChild(li);
+      }
+    }
+
+    obtenerMD();
+  </script>
+    </body>
+</html>
