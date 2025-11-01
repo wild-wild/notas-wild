@@ -102,7 +102,7 @@ echo "*** System restart required ***"
 
 ---
 
-## 🧰 Configuración manual de Nginx dentro del contenedor
+# 🧰 Configuración manual de Nginx dentro del contenedor 
 
 ### 📄 Ver contenido del archivo nginx.conf
 ```bash
