@@ -103,7 +103,7 @@ echo "*** System restart required ***"
 ---
 
 
-# 🧰 CONFIGURACIÓN MANUAL DE NGINX DENTRO DEL CONTENEDOR**  
+# 🧰 CONFIGURACIÓN MANUAL DE NGINX DENTRO DEL CONTENEDOR
 
 ---
 
