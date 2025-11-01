@@ -153,6 +153,12 @@ php artisan migrate --force
 ```
 
 ---
+### 🔧 Crear el enlace simbolico
+```bash
+php artisan storage:link
+```
+
+---
 
 ✅ **Este documento sirve como referencia rápida para desarrolladores Laravel. Puedes agregar tus propios alias, scripts personalizados o flujos de trabajo específicos.**
 
