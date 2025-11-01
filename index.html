@@ -4,27 +4,26 @@
   <meta charset="utf-8"/>
   <title>📚 Mis Notas</title>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
-  <!-- Tailwind + typography plugin -->
   <script src="https://cdn.tailwindcss.com?plugins=typography"></script>
-  <!-- Markdown parser -->
   <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 </head>
-<body class="bg-slate-100 text-slate-800 h-screen overflow-hidden">
+<body class="bg-gradient-to-br from-slate-100 to-slate-200 text-gray-800 h-screen overflow-hidden">
   <div class="flex h-full">
 
-    <!-- 1. Lista lateral izquierda -->
-    <aside class="w-80 bg-white shadow-lg overflow-y-auto">
-      <h2 class="text-lg font-bold text-indigo-600 px-4 py-4 border-b">Índice</h2>
+    <!-- 1. Sidebar -->
+    <aside class="w-80 bg-white/90 backdrop-blur-md shadow-xl border-r border-slate-300">
+      <h2 class="text-lg font-bold text-indigo-600 px-4 py-4 border-b border-slate-200 bg-white">
+        📂 Índice de Notas
+      </h2>
       <ul id="lista" class="divide-y divide-slate-200"></ul>
     </aside>
 
-    <!-- 2. Contenido derecha -->
-    <main class="flex-1 overflow-y-auto">
+    <!-- 2. Main Content -->
+    <main class="flex-1 overflow-y-auto bg-white/70 backdrop-blur-md shadow-inner">
       <div id="mdContent" class="prose prose-indigo max-w-none p-8">
         <p class="text-slate-500">Selecciona una nota del lateral para ver su contenido.</p>
       </div>
     </main>
-
   </div>
 
   <script>
@@ -32,18 +31,19 @@
     const REPO = 'notas-wild';
 
     async function obtenerMD() {
-      const res  = await fetch(`https://api.github.com/repos/${USER}/${REPO}/git/trees/main?recursive=1`);
+      const res = await fetch(`https://api.github.com/repos/${USER}/${REPO}/git/trees/main?recursive=1`);
       const data = await res.json();
       const files = data.tree
-                        .filter(f => f.path.endsWith('.md') && f.path !== 'README.md')
-                        .sort((a,b) => a.path.localeCompare(b.path));
+        .filter(f => f.path.endsWith('.md') && f.path !== 'README.md')
+        .sort((a, b) => a.path.localeCompare(b.path));
+
       const lista = document.getElementById('lista');
 
       for (const file of files) {
-        const titulo = file.path.replace(/^notas\//,'').replace(/\.md$/,'');
+        const titulo = file.path.replace(/^notas\//, '').replace(/\.md$/, '');
         const rawUrl = `https://raw.githubusercontent.com/${USER}/${REPO}/main/${file.path}`;
         const li = document.createElement('li');
-        li.className = 'px-4 py-3 hover:bg-indigo-50 cursor-pointer';
+        li.className = 'px-4 py-3 hover:bg-indigo-100 cursor-pointer transition-colors';
         li.textContent = titulo;
         li.onclick = () => cargaContenido(rawUrl, titulo);
         lista.appendChild(li);
@@ -52,9 +52,27 @@
 
     async function cargaContenido(url, titulo) {
       const res = await fetch(url);
-      const md  = await res.text();
-      document.getElementById('mdContent').innerHTML = marked.parse(md);
-      // título opcional arriba
+      const md = await res.text();
+      const html = marked.parse(md);
+      const contenedor = document.getElementById('mdContent');
+      contenedor.innerHTML = html;
+
+      // Aplicar botones de copia a bloques de código
+      const codeBlocks = contenedor.querySelectorAll('pre > code');
+      codeBlocks.forEach(block => {
+        const button = document.createElement('button');
+        button.textContent = '📋 Copiar';
+        button.className = 'absolute top-2 right-2 bg-indigo-600 text-white text-xs px-2 py-1 rounded shadow cursor-pointer hover:bg-indigo-700 transition-transform';
+        button.onclick = () => {
+          navigator.clipboard.writeText(block.textContent);
+          button.textContent = '✅ Copiado';
+          setTimeout(() => button.textContent = '📋 Copiar', 2000);
+        };
+        const pre = block.parentElement;
+        pre.classList.add('relative', 'bg-slate-900', 'text-slate-100', 'p-4', 'rounded-lg', 'overflow-x-auto', 'mb-4', 'shadow-lg');
+        pre.appendChild(button);
+      });
+
       document.title = `📚 ${titulo}`;
     }
 
