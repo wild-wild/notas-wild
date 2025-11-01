@@ -102,8 +102,10 @@ echo "*** System restart required ***"
 
 ---
 
-> 🧰 **CONFIGURACIÓN MANUAL DE NGINX DENTRO DEL CONTENEDOR**  
-> Guía paso a paso con fondo verde y estilo limpio
+
+# 🧰 CONFIGURACIÓN MANUAL DE NGINX DENTRO DEL CONTENEDOR**  
+
+---
 
 ### 📄 Ver contenido del archivo nginx.conf
 ```bash
