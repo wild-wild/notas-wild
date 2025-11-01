@@ -6,45 +6,27 @@
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <script src="https://cdn.tailwindcss.com?plugins=typography"></script>
   <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-
-  <style>
-    /* Transición del menú lateral */
-    .sidebar-enter {
-      transform: translateX(-100%);
-    }
-    .sidebar-enter-active {
-      transform: translateX(0);
-      transition: transform 0.3s ease-out;
-    }
-    .sidebar-exit {
-      transform: translateX(0);
-    }
-    .sidebar-exit-active {
-      transform: translateX(-100%);
-      transition: transform 0.3s ease-out;
-    }
-  </style>
-
 </head>
-<body class="bg-gradient-to-br from-slate-100 to-white text-gray-800 h-screen">
 
-  <!-- Mobile Navbar -->
+<body class="bg-gradient-to-br from-slate-100 to-white text-gray-800 h-screen overflow-hidden">
+
+  <!-- Barra superior móvil -->
   <header class="md:hidden bg-white shadow py-3 px-4 flex items-center justify-between">
     <h1 class="font-semibold text-indigo-600">📚 Mis Notas</h1>
-    <button id="menuBtn" class="text-indigo-600 text-2xl">☰</button>
+    <button id="menuBtn" aria-label="Abrir menú" class="text-indigo-600 text-2xl">☰</button>
   </header>
 
   <div class="flex h-full">
 
-    <!-- Sidebar / Índice -->
-    <aside id="sidebar" class="fixed md:static top-0 left-0 z-20 w-72 md:w-80 h-full bg-white/80 backdrop-blur-md shadow-lg border-r border-slate-200 transform -translate-x-full md:translate-x-0 transition-transform">
+    <!-- Sidebar -->
+    <aside id="sidebar" class="fixed md:static inset-y-0 left-0 md:w-80 w-72 bg-white/90 backdrop-blur-md shadow-lg border-r border-slate-200 transform -translate-x-full md:translate-x-0 transition-transform duration-300 z-20">
       <h2 class="text-xl font-bold text-indigo-600 px-6 py-4 border-b bg-white/70 backdrop-blur-lg">
         📂 Índice
       </h2>
-      <ul id="lista" class="divide-y divide-slate-100 h-[calc(100%-60px)] overflow-y-auto"></ul>
+      <ul id="lista" class="divide-y divide-slate-100 overflow-y-auto h-[calc(100%-64px)]"></ul>
     </aside>
 
-    <!-- Main Content -->
+    <!-- Contenido principal -->
     <main class="flex-1 overflow-y-auto p-5 md:p-8">
       <div id="mdContent" class="prose prose-indigo max-w-none">
         <p class="text-slate-500">Selecciona una nota del índice lateral para ver su contenido.</p>
@@ -53,70 +35,80 @@
   </div>
 
   <script>
-    // Variables de GitHub
-    const USER = 'wild-wild';
-    const REPO = 'notas-wild';
+    // 🔧 Configura aquí tu repositorio
+    const USER = 'wild-wild'; // <-- Cambia esto
+    const REPO = 'notas-wild'; // <-- Cambia esto
+    const BRANCH = 'main'; // o 'master' según tu repo
 
-    // Mostrar/Ocultar índice en móvil
-    const menuBtn = document.getElementById('menuBtn');
     const sidebar = document.getElementById('sidebar');
     let sidebarVisible = false;
 
-    menuBtn?.addEventListener('click', () => {
+    // Mostrar/Ocultar sidebar en móvil
+    document.getElementById('menuBtn')?.addEventListener('click', () => {
       sidebarVisible = !sidebarVisible;
       sidebar.style.transform = sidebarVisible ? 'translateX(0)' : 'translateX(-100%)';
     });
 
-    // Carga de archivos desde GitHub
+    // Cargar lista de notas
     async function obtenerMD() {
-      const res = await fetch(`https://api.github.com/repos/${USER}/${REPO}/git/trees/main?recursive=1`);
-      const data = await res.json();
-      const files = data.tree
-        .filter(f => f.path.endsWith('.md') && f.path !== 'README.md')
-        .sort((a, b) => a.path.localeCompare(b.path));
+      try {
+        const res = await fetch(`https://api.github.com/repos/${USER}/${REPO}/git/trees/${BRANCH}?recursive=1`);
+        const data = await res.json();
+        const files = data.tree
+          .filter(f => f.path.endsWith('.md') && f.path !== 'README.md')
+          .sort((a, b) => a.path.localeCompare(b.path));
 
-      const lista = document.getElementById('lista');
+        const lista = document.getElementById('lista');
+        files.forEach(file => {
+          const titulo = file.path.replace(/\.md$/, '');
+          const rawUrl = `https://raw.githubusercontent.com/${USER}/${REPO}/${BRANCH}/${file.path}`;
+          const li = document.createElement('li');
+          li.className = 'px-4 py-3 hover:bg-indigo-50 cursor-pointer transition-colors';
+          li.textContent = titulo;
+          li.onclick = () => cargarContenido(rawUrl, titulo);
+          lista.appendChild(li);
+        });
 
-      for (const file of files) {
-        const titulo = file.path.replace(/^notas\//, '').replace(/\.md$/, '');
-        const rawUrl = `https://raw.githubusercontent.com/${USER}/${REPO}/main/${file.path}`;
-        const li = document.createElement('li');
-        li.className = 'px-4 py-3 hover:bg-indigo-50 cursor-pointer transition-colors';
-        li.textContent = titulo;
-        li.onclick = () => cargaContenido(rawUrl, titulo);
-        lista.appendChild(li);
+      } catch (error) {
+        console.error('Error al obtener archivos:', error);
       }
     }
 
-    // Mostrar el contenido de cada nota
-    async function cargaContenido(url, titulo) {
-      const res = await fetch(url);
-      const md = await res.text();
-      const html = marked.parse(md);
-      const contenedor = document.getElementById('mdContent');
-      contenedor.innerHTML = html;
+    // Cargar contenido de una nota
+    async function cargarContenido(url, titulo) {
+      try {
+        const res = await fetch(url);
+        const md = await res.text();
+        const contenedor = document.getElementById('mdContent');
+        contenedor.innerHTML = marked.parse(md);
 
-      // Añadir botones de copia a los bloques de código
-      const codeBlocks = contenedor.querySelectorAll('pre > code');
-      codeBlocks.forEach(block => {
-        const button = document.createElement('button');
-        button.textContent = '📋 Copiar';
-        button.className = 'absolute top-2 right-2 bg-indigo-600 text-white text-xs px-2 py-1 rounded shadow hover:bg-indigo-700';
-        button.onclick = () => {
-          navigator.clipboard.writeText(block.textContent);
-          button.textContent = '✅ Copiado';
-          setTimeout(() => button.textContent = '📋 Copiar', 2000);
-        };
-        const pre = block.parentElement;
-        pre.classList.add('relative', 'bg-slate-900', 'text-slate-100', 'p-4', 'rounded-lg', 'overflow-x-auto', 'mb-4', 'shadow-lg');
-        pre.appendChild(button);
-      });
+        // Añadir botón de copia a los bloques de código
+        contenedor.querySelectorAll('pre > code').forEach(block => {
+          const pre = block.parentElement;
+          const button = document.createElement('button');
+          button.textContent = '📋 Copiar';
+          button.className = 'absolute top-2 right-2 bg-indigo-600 text-white text-xs px-2 py-1 rounded shadow hover:bg-indigo-700 transition';
 
-      document.title = `📚 ${titulo}`;
-      if (sidebarVisible) {
-        sidebar.style.transform = 'translateX(-100%)'; // Cierra sidebar en móvil al seleccionar
-        sidebarVisible = false;
+          button.onclick = () => {
+            navigator.clipboard.writeText(block.textContent);
+            button.textContent = '✅ Copiado';
+            setTimeout(() => button.textContent = '📋 Copiar', 2000);
+          };
+
+          pre.classList.add('relative', 'bg-slate-900', 'text-slate-100', 'p-4', 'rounded-lg', 'overflow-x-auto', 'mb-4');
+          pre.appendChild(button);
+        });
+
+        document.title = `📚 ${titulo}`;
+        if (sidebarVisible) toggleSidebar(); // Cierra sidebar en mobile
+      } catch (error) {
+        console.error('Error al cargar contenido:', error);
       }
+    }
+
+    function toggleSidebar() {
+      sidebarVisible = !sidebarVisible;
+      sidebar.style.transform = sidebarVisible ? 'translateX(0)' : 'translateX(-100%)';
     }
 
     obtenerMD();
