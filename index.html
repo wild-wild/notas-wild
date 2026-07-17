@@ -1,118 +1,787 @@
 <!doctype html>
-<html lang="es">
+<html lang="es" class="dark">
 <head>
   <meta charset="utf-8"/>
-  <title>📚 Mis Notas</title>
+  <title>📚 Mis Notas - Obsidian Style</title>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  
+  <!-- CSS & Tailwind Configuration -->
   <script src="https://cdn.tailwindcss.com?plugins=typography"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            border: "hsl(var(--border))",
+            input: "hsl(var(--input))",
+            ring: "hsl(var(--ring))",
+            background: "hsl(var(--background))",
+            foreground: "hsl(var(--foreground))",
+            primary: {
+              DEFAULT: "hsl(var(--primary))",
+              foreground: "hsl(var(--primary-foreground))",
+            },
+            secondary: {
+              DEFAULT: "hsl(var(--secondary))",
+              foreground: "hsl(var(--secondary-foreground))",
+            },
+            muted: {
+              DEFAULT: "hsl(var(--muted))",
+              foreground: "hsl(var(--muted-foreground))",
+            },
+            accent: {
+              DEFAULT: "hsl(var(--accent))",
+              foreground: "hsl(var(--accent-foreground))",
+            },
+            card: {
+              DEFAULT: "hsl(var(--card))",
+              foreground: "hsl(var(--card-foreground))",
+            },
+          },
+        }
+      }
+    }
+  </script>
+  
+  <!-- Fonts & Libraries -->
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/vis/4.21.0/vis.min.js"></script>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/vis/4.21.0/vis.min.css" rel="stylesheet" type="text/css" />
+  
+  <!-- Lucide Icons -->
+  <script src="https://cdn.jsdelivr.net/npm/lucide/dist/umd/lucide.min.js"></script>
+  
+  <style>
+    :root {
+      --background: 240 5% 96%;
+      --foreground: 240 10% 3.9%;
+      --card: 0 0% 100%;
+      --card-foreground: 240 10% 3.9%;
+      --primary: 240 5.9% 10%;
+      --primary-foreground: 0 0% 98%;
+      --secondary: 240 4.8% 90%;
+      --secondary-foreground: 240 5.9% 10%;
+      --muted: 240 4.8% 93.9%;
+      --muted-foreground: 240 4% 40%;
+      --accent: 215 90% 50%;
+      --accent-foreground: 0 0% 100%;
+      --border: 240 5.9% 85%;
+      --input: 240 5.9% 85%;
+      --ring: 240 5.9% 10%;
+    }
+    .dark {
+      --background: 240 10% 4%;
+      --foreground: 0 0% 95%;
+      --card: 240 10% 6%;
+      --card-foreground: 0 0% 95%;
+      --primary: 0 0% 98%;
+      --primary-foreground: 240 5.9% 10%;
+      --secondary: 240 3.7% 12%;
+      --secondary-foreground: 0 0% 98%;
+      --muted: 240 3.7% 10%;
+      --muted-foreground: 240 5% 60%;
+      --accent: 217.2 91.2% 59.8%;
+      --accent-foreground: 222.2 47.4% 11.2%;
+      --border: 240 3.7% 14%;
+      --input: 240 3.7% 14%;
+      --ring: 240 4.9% 83.9%;
+    }
+
+    * {
+      font-family: 'JetBrains Mono', monospace;
+      scrollbar-width: thin;
+      scrollbar-color: hsl(var(--border)) transparent;
+    }
+
+    /* Custom scrollbars */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: hsl(var(--border));
+      border-radius: 4px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: hsl(var(--muted-foreground) / 0.4);
+    }
+
+    code, pre, .mono {
+      font-family: 'JetBrains Mono', monospace !important;
+    }
+
+    /* Smooth animations */
+    .fade-in-content {
+      animation: fadeIn 0.3s ease-out forwards;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Hide default vis.js navigation controls background */
+    .vis-network {
+      outline: none;
+    }
+  </style>
 </head>
 
-<body class="bg-gradient-to-br from-slate-100 to-white text-gray-800 h-screen overflow-hidden">
+<body class="bg-background text-foreground transition-colors duration-300 overflow-hidden h-screen flex flex-col">
 
-  <!-- Barra superior móvil -->
-  <header class="md:hidden bg-white shadow py-3 px-4 flex items-center justify-between">
-    <h1 class="font-semibold text-indigo-600">📚 Mis Notas</h1>
-    <button id="menuBtn" aria-label="Abrir menú" class="text-indigo-600 text-2xl">☰</button>
+  <!-- Mobile Top Bar -->
+  <header class="flex md:hidden items-center justify-between px-6 py-4 bg-card border-b border-border z-30">
+    <div class="flex items-center gap-2">
+      <i data-lucide="book-open" class="w-6 h-6 text-accent"></i>
+      <h1 class="text-lg font-bold tracking-tight">Mis Notas</h1>
+    </div>
+    <div class="flex items-center gap-3">
+      <button id="themeToggleMobile" class="p-2 rounded-lg bg-secondary text-foreground hover:opacity-80">
+        <i data-lucide="sun-moon" class="w-4 h-4"></i>
+      </button>
+      <button id="menuBtn" class="p-2 rounded-lg bg-secondary text-foreground font-bold" aria-label="Menú">
+        <i data-lucide="menu" class="w-4 h-4"></i>
+      </button>
+    </div>
   </header>
 
-  <div class="flex h-full">
+  <!-- Main Container -->
+  <div class="flex flex-1 overflow-hidden relative">
 
-    <!-- Sidebar -->
-    <aside id="sidebar" class="fixed md:static inset-y-0 left-0 md:w-80 w-72 bg-white/90 backdrop-blur-md shadow-lg border-r border-slate-200 transform -translate-x-full md:translate-x-0 transition-transform duration-300 z-20">
-      <h2 class="text-xl font-bold text-indigo-600 px-6 py-4 border-b bg-white/70 backdrop-blur-lg">
-        📂 Índice
-      </h2>
-      <ul id="lista" class="divide-y divide-slate-100 overflow-y-auto h-[calc(100%-64px)]"></ul>
+    <!-- Left Sidebar (Index & Search) -->
+    <aside id="sidebar" class="absolute inset-y-0 left-0 w-80 bg-card border-r border-border flex flex-col z-40 transform -translate-x-full transition-transform duration-300 md:relative md:translate-x-0">
+      
+      <!-- Logo / Title -->
+      <div class="p-5 border-b border-border hidden md:flex items-center justify-between">
+        <div class="flex items-center gap-2">
+          <i data-lucide="book-open" class="w-6 h-6 text-accent"></i>
+          <h2 class="font-bold text-lg tracking-wide bg-gradient-to-r from-blue-500 to-indigo-500 bg-clip-text text-transparent">Mis Notas</h2>
+        </div>
+        <span class="text-xs bg-muted text-muted-foreground px-2 py-1 rounded border border-border">Obsidian</span>
+      </div>
+
+      <!-- Search Input -->
+      <div class="p-4 border-b border-border">
+        <div class="relative">
+          <span class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-muted-foreground text-sm">
+            <i data-lucide="search" class="w-4 h-4"></i>
+          </span>
+          <input type="text" id="searchInput" placeholder="Buscar nota por título..." 
+            class="w-full pl-9 pr-4 py-2 text-sm bg-background border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-accent focus:border-transparent text-foreground placeholder:text-muted-foreground transition-all"/>
+        </div>
+      </div>
+
+      <!-- File List -->
+      <ul id="lista" class="flex-1 overflow-y-auto py-2 px-3 space-y-1">
+        <!-- Notes are populated here -->
+        <div class="text-center py-8 text-muted-foreground text-sm animate-pulse">Cargando repositorio...</div>
+      </ul>
+
+      <!-- Sidebar Footer (Theme, Layout, Info) -->
+      <div class="p-4 border-t border-border bg-background/50 space-y-3">
+        <!-- Layout Selector Buttons -->
+        <div class="grid grid-cols-3 gap-1 bg-secondary p-1 rounded-lg text-xs">
+          <button id="layoutNoteBtn" class="py-1.5 px-2 rounded-md font-medium transition-all bg-card shadow-sm text-foreground flex items-center justify-center gap-1">
+            <i data-lucide="file-text" class="w-3.5 h-3.5"></i> Nota
+          </button>
+          <button id="layoutSplitBtn" class="py-1.5 px-2 rounded-md font-medium transition-all text-muted-foreground hover:text-foreground flex items-center justify-center gap-1">
+            <i data-lucide="columns-2" class="w-3.5 h-3.5"></i> Split
+          </button>
+          <button id="layoutGraphBtn" class="py-1.5 px-2 rounded-md font-medium transition-all text-muted-foreground hover:text-foreground flex items-center justify-center gap-1">
+            <i data-lucide="git-branch" class="w-3.5 h-3.5"></i> Grafo
+          </button>
+        </div>
+
+        <div class="flex items-center justify-between text-xs text-muted-foreground">
+          <span>Repo: <strong class="text-foreground">notas-wild</strong></span>
+          <button id="themeToggle" class="p-1.5 rounded-lg bg-secondary text-foreground hover:bg-border transition-all" title="Cambiar tema">
+            <i data-lucide="sun" class="w-4 h-4 block dark:hidden"></i>
+            <i data-lucide="moon" class="w-4 h-4 hidden dark:block"></i>
+          </button>
+        </div>
+      </div>
     </aside>
 
-    <!-- Contenido principal -->
-    <main class="flex-1 overflow-y-auto p-5 md:p-8">
-      <div id="mdContent" class="prose prose-indigo max-w-none">
-        <p class="text-slate-500">Selecciona una nota del índice lateral para ver su contenido.</p>
+    <!-- Content Workspace -->
+    <main class="flex-1 flex flex-col overflow-hidden bg-background relative">
+      
+      <!-- Top Scroll Progress Indicator -->
+      <div class="h-[2px] w-full bg-border relative z-10">
+        <div id="readProgress" class="h-full bg-accent w-0 transition-all duration-150"></div>
+      </div>
+
+      <!-- Split Layout Container (Note Content vs Network Graph) -->
+      <div class="flex flex-1 overflow-hidden w-full h-full">
+        
+        <!-- Note Content Pane -->
+        <div id="notePane" class="flex-1 h-full overflow-y-auto transition-all duration-300 px-6 py-8 md:px-12">
+          <div id="mdContent" class="max-w-3xl mx-auto prose prose-zinc dark:prose-invert prose-headings:font-bold prose-a:text-accent hover:prose-a:underline prose-pre:bg-zinc-950 dark:prose-pre:bg-black prose-pre:border prose-pre:border-border prose-img:rounded-xl">
+            <!-- Initial state message -->
+            <div class="flex flex-col items-center justify-center py-24 text-center">
+              <div class="w-16 h-16 rounded-full bg-accent/10 flex items-center justify-center text-accent mb-4 animate-bounce">
+                <i data-lucide="folder-open" class="w-8 h-8"></i>
+              </div>
+              <h3 class="text-xl font-bold text-foreground mb-1">Explora tus Notas</h3>
+              <p class="text-muted-foreground text-sm max-w-sm">Selecciona una nota del índice lateral para visualizar su contenido, ver sus backlinks o explorar la red interactiva de relaciones.</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Vis.js Graph Pane -->
+        <div id="graphPane" class="w-0 hidden h-full border-l border-border relative bg-card transition-all duration-300 flex-col">
+          <!-- Graph Toolbar -->
+          <div class="absolute top-4 right-4 z-20 flex items-center gap-2 bg-background/80 backdrop-blur border border-border p-1.5 rounded-lg shadow-lg">
+            <button id="zoomInBtn" class="p-1.5 hover:bg-secondary rounded text-sm transition-all" title="Acercar">
+              <i data-lucide="zoom-in" class="w-4 h-4 text-foreground"></i>
+            </button>
+            <button id="zoomOutBtn" class="p-1.5 hover:bg-secondary rounded text-sm transition-all" title="Alejar">
+              <i data-lucide="zoom-out" class="w-4 h-4 text-foreground"></i>
+            </button>
+            <button id="zoomFitBtn" class="p-1.5 hover:bg-secondary rounded text-sm transition-all" title="Centrar Red">
+              <i data-lucide="maximize-2" class="w-4 h-4 text-foreground"></i>
+            </button>
+          </div>
+          <!-- Graph Canvas -->
+          <div id="network" class="w-full h-full"></div>
+        </div>
+
       </div>
     </main>
+
+    <!-- Right Sidebar (Table of Contents / Outline & Backlinks) -->
+    <aside id="outlineSidebar" class="hidden xl:flex w-64 bg-card border-l border-border flex-col p-5 overflow-y-auto">
+      <div class="space-y-6">
+        <div>
+          <h3 class="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-3 flex items-center gap-1.5">
+            <i data-lucide="list" class="w-3.5 h-3.5"></i> En esta Nota
+          </h3>
+          <ul id="tocList" class="space-y-2 text-sm text-muted-foreground border-l border-border pl-3">
+            <li class="italic text-xs">Ninguna nota activa</li>
+          </ul>
+        </div>
+        
+        <div class="border-t border-border pt-5">
+          <h3 class="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-3 flex items-center gap-1.5">
+            <i data-lucide="link" class="w-3.5 h-3.5"></i> Notas Vinculadas
+          </h3>
+          <ul id="backlinksList" class="space-y-2 text-sm text-muted-foreground">
+            <li class="italic text-xs">Sin referencias cruzadas</li>
+          </ul>
+        </div>
+      </div>
+    </aside>
+
   </div>
 
+  <!-- Script logic -->
   <script>
-    // 🔧 Configura aquí tu repositorio
-    const USER = 'wild-wild'; // <-- Cambia esto
-    const REPO = 'notas-wild'; // <-- Cambia esto
-    const BRANCH = 'main'; // o 'master' según tu repo
+    const USER = 'wild-wild';
+    const REPO = 'notas-wild';
+    const BRANCH = 'main';
+
+    let allFiles = [];
+    let currentNote = null;
+    let network = null;
+    let currentLayout = 'note'; // note, split, graph
 
     const sidebar = document.getElementById('sidebar');
-    let sidebarVisible = false;
+    const notePane = document.getElementById('notePane');
+    const graphPane = document.getElementById('graphPane');
+    const outlineSidebar = document.getElementById('outlineSidebar');
+    const lista = document.getElementById('lista');
+    const searchInput = document.getElementById('searchInput');
+    const readProgress = document.getElementById('readProgress');
+    const tocList = document.getElementById('tocList');
+    const backlinksList = document.getElementById('backlinksList');
 
-    // Mostrar/Ocultar sidebar en móvil
+    // Layout configuration mappings
+    function updateLayout(layout) {
+      currentLayout = layout;
+      
+      // Reset classes
+      document.getElementById('layoutNoteBtn').className = "py-1.5 px-2 rounded-md font-medium transition-all text-muted-foreground hover:text-foreground flex items-center justify-center gap-1";
+      document.getElementById('layoutSplitBtn').className = "py-1.5 px-2 rounded-md font-medium transition-all text-muted-foreground hover:text-foreground flex items-center justify-center gap-1";
+      document.getElementById('layoutGraphBtn').className = "py-1.5 px-2 rounded-md font-medium transition-all text-muted-foreground hover:text-foreground flex items-center justify-center gap-1";
+
+      if (layout === 'note') {
+        document.getElementById('layoutNoteBtn').className = "py-1.5 px-2 rounded-md font-medium transition-all bg-card shadow-sm text-foreground flex items-center justify-center gap-1";
+        notePane.className = "flex-1 h-full overflow-y-auto transition-all duration-300 px-6 py-8 md:px-12";
+        graphPane.className = "w-0 hidden h-full border-l border-border relative bg-card transition-all duration-300 flex-col";
+      } else if (layout === 'split') {
+        document.getElementById('layoutSplitBtn').className = "py-1.5 px-2 rounded-md font-medium transition-all bg-card shadow-sm text-foreground flex items-center justify-center gap-1";
+        notePane.className = "w-full md:w-1/2 h-full overflow-y-auto transition-all duration-300 px-6 py-8 md:px-12";
+        graphPane.className = "w-full md:w-1/2 flex h-full border-l border-border relative bg-card transition-all duration-300 flex-col";
+        setTimeout(() => { if (network) network.fit(); }, 350);
+      } else if (layout === 'graph') {
+        document.getElementById('layoutGraphBtn').className = "py-1.5 px-2 rounded-md font-medium transition-all bg-card shadow-sm text-foreground flex items-center justify-center gap-1";
+        notePane.className = "w-0 hidden h-full overflow-y-auto transition-all duration-300 px-6 py-8 md:px-12";
+        graphPane.className = "flex-1 flex h-full border-l border-border relative bg-card transition-all duration-300 flex-col";
+        setTimeout(() => { if (network) network.fit(); }, 350);
+      }
+    }
+
+    document.getElementById('layoutNoteBtn').addEventListener('click', () => updateLayout('note'));
+    document.getElementById('layoutSplitBtn').addEventListener('click', () => updateLayout('split'));
+    document.getElementById('layoutGraphBtn').addEventListener('click', () => updateLayout('graph'));
+
+    // Dark/Light Theme toggling
+    function toggleTheme() {
+      const isDark = document.documentElement.classList.toggle('dark');
+      localStorage.setItem('theme', isDark ? 'dark' : 'light');
+      // Rebuild graph to paint nodes nicely matching the theme colors
+      if (allFiles.length > 0) {
+        buildGraph();
+      }
+    }
+    
+    // Read theme from cache
+    if (localStorage.getItem('theme') === 'light') {
+      document.documentElement.classList.remove('dark');
+    }
+
+    document.getElementById('themeToggle').addEventListener('click', toggleTheme);
+    document.getElementById('themeToggleMobile').addEventListener('click', toggleTheme);
+
+    // Mobile Sidebar controls
+    let sidebarVisible = false;
     document.getElementById('menuBtn')?.addEventListener('click', () => {
       sidebarVisible = !sidebarVisible;
-      sidebar.style.transform = sidebarVisible ? 'translateX(0)' : 'translateX(-100%)';
+      if (sidebarVisible) {
+        sidebar.classList.remove('-translate-x-full');
+      } else {
+        sidebar.classList.add('-translate-x-full');
+      }
     });
 
-    // Cargar lista de notas
+    // Custom marked options for Wiki-links & checkboxes
+    const renderer = new marked.Renderer();
+    
+    // Process checkbox list items beautifully
+    renderer.listitem = function(text, task, checked) {
+      if (task) {
+        const checkAttr = checked ? 'checked disabled' : 'disabled';
+        return `<li class="list-none flex items-start gap-2 -ml-6 my-1">
+          <input type="checkbox" class="mt-1.5 h-4 w-4 rounded border-border text-accent focus:ring-accent bg-secondary" ${checkAttr}>
+          <span class="${checked ? 'line-through text-muted-foreground' : 'text-foreground'}">${text}</span>
+        </li>`;
+      }
+      return `<li>${text}</li>`;
+    };
+
+    marked.setOptions({
+      renderer: renderer,
+      gfm: true,
+      breaks: true
+    });
+
+    // Custom parser for obsidian wiki-links [[Note Name]] or [[Note Name|Alias]]
+    function parseWikiLinks(markdown) {
+      return markdown.replace(/\[\[([^\]|]+)(?:\|([^\]]+))?\]\]/g, (match, target, label) => {
+        const displayLabel = label ? label.trim() : target.trim();
+        const notePath = target.trim();
+        return `<a href="#" onclick="cargarNotaPorTitulo('${notePath}'); return false;" class="text-accent hover:underline font-semibold">[[${displayLabel}]]</a>`;
+      });
+    }
+
+    // Scroll progress bar indicator
+    notePane.addEventListener('scroll', () => {
+      const totalHeight = notePane.scrollHeight - notePane.clientHeight;
+      if (totalHeight > 0) {
+        const progress = (notePane.scrollTop / totalHeight) * 100;
+        readProgress.style.width = `${progress}%`;
+      } else {
+        readProgress.style.width = '0%';
+      }
+    });
+
+    // Live search input filtering
+    searchInput.addEventListener('input', (e) => {
+      const query = e.target.value.toLowerCase();
+      document.querySelectorAll('#lista li').forEach(item => {
+        const title = item.getAttribute('data-title').toLowerCase();
+        if (title.includes(query)) {
+          item.classList.remove('hidden');
+        } else {
+          item.classList.add('hidden');
+        }
+      });
+    });
+
+    // Fetch repository MD files tree
     async function obtenerMD() {
       try {
         const res = await fetch(`https://api.github.com/repos/${USER}/${REPO}/git/trees/${BRANCH}?recursive=1`);
         const data = await res.json();
-        const files = data.tree
+        allFiles = data.tree
           .filter(f => f.path.endsWith('.md') && f.path !== 'README.md')
           .sort((a, b) => a.path.localeCompare(b.path));
 
-        const lista = document.getElementById('lista');
-        files.forEach(file => {
-          const titulo = file.path.replace(/\.md$/, '');
-          const rawUrl = `https://raw.githubusercontent.com/${USER}/${REPO}/${BRANCH}/${file.path}`;
-          const li = document.createElement('li');
-          li.className = 'px-4 py-3 hover:bg-indigo-50 cursor-pointer transition-colors';
-          li.textContent = titulo;
-          li.onclick = () => cargarContenido(rawUrl, titulo);
-          lista.appendChild(li);
-        });
-
+        renderList();
+        buildGraph();
       } catch (error) {
         console.error('Error al obtener archivos:', error);
+        lista.innerHTML = `<div class="text-red-500 text-center py-4 text-xs">Error de conexión. Revisa configuración.</div>`;
       }
     }
 
-    // Cargar contenido de una nota
-    async function cargarContenido(url, titulo) {
+    // Dynamic title fetch/extraction from note content (first H1 `# ` tag)
+    async function asyncFetchTitle(file, elementId) {
+      try {
+        const rawUrl = `https://raw.githubusercontent.com/${USER}/${REPO}/${BRANCH}/${file.path}`;
+        const res = await fetch(rawUrl);
+        const text = await res.text();
+        const match = text.match(/^\s*#\s+(.+)$/m);
+        if (match && match[1]) {
+          const parsedTitle = match[1].trim();
+          file.title = parsedTitle; // Save parsed title to state
+          
+          const liElement = document.getElementById(elementId);
+          if (liElement) {
+            const titleSpan = liElement.querySelector('.note-title-text');
+            if (titleSpan) {
+              titleSpan.textContent = parsedTitle;
+            }
+            liElement.setAttribute('data-title', parsedTitle.toLowerCase());
+          }
+          // Re-trigger graph rebuild to update node labels
+          buildGraph();
+        }
+      } catch (err) {
+        console.error("No se pudo obtener el título asíncrono para:", file.path, err);
+      }
+    }
+
+    // Render list of notes on sidebar
+    function renderList() {
+      lista.innerHTML = '';
+      allFiles.forEach((file, idx) => {
+        const cleanTitle = file.path.replace(/\.md$/, '').split('/').pop();
+        const fullPathTitle = file.path.replace(/\.md$/, '');
+        const rawUrl = `https://raw.githubusercontent.com/${USER}/${REPO}/${BRANCH}/${file.path}`;
+        const elementId = `note-item-${idx}`;
+        
+        const li = document.createElement('li');
+        li.id = elementId;
+        li.setAttribute('data-title', fullPathTitle);
+        li.className = "group flex items-center gap-2 px-3 py-2.5 text-sm rounded-lg cursor-pointer text-muted-foreground hover:bg-secondary hover:text-foreground transition-all";
+        li.innerHTML = `
+          <i data-lucide="file" class="w-4 h-4 shrink-0 opacity-70 group-hover:opacity-100"></i> 
+          <span class="note-title-text truncate">${cleanTitle}</span>
+        `;
+        
+        li.onclick = () => {
+          document.querySelectorAll('#lista li').forEach(item => {
+            item.classList.remove('bg-accent/15', 'text-accent', 'font-medium', 'border-l-2', 'border-accent');
+            item.classList.add('text-muted-foreground');
+          });
+          li.classList.add('bg-accent/15', 'text-accent', 'font-medium', 'border-l-2', 'border-accent');
+          li.classList.remove('text-muted-foreground');
+          cargarContenido(rawUrl, file.title || fullPathTitle, file.path);
+        };
+        
+        lista.appendChild(li);
+        
+        // Fetch the proper note title asynchronously in background
+        asyncFetchTitle(file, elementId);
+      });
+      lucide.createIcons();
+    }
+
+    // Load Note content
+    async function cargarContenido(url, displayTitle, originalPath) {
       try {
         const res = await fetch(url);
         const md = await res.text();
         const contenedor = document.getElementById('mdContent');
-        contenedor.innerHTML = marked.parse(md);
+        
+        // Custom pre-process for WikiLinks
+        const htmlParsed = marked.parse(parseWikiLinks(md));
+        
+        contenedor.className = "max-w-3xl mx-auto prose prose-zinc dark:prose-invert prose-headings:font-bold prose-a:text-accent hover:prose-a:underline prose-pre:bg-zinc-950 dark:prose-pre:bg-black prose-pre:border prose-pre:border-border prose-img:rounded-xl fade-in-content";
+        contenedor.innerHTML = htmlParsed;
+        currentNote = originalPath ? originalPath.replace(/\.md$/, '') : displayTitle;
 
-        // Añadir botón de copia a los bloques de código
-        contenedor.querySelectorAll('pre > code').forEach(block => {
-          const pre = block.parentElement;
-          const button = document.createElement('button');
-          button.textContent = '📋 Copiar';
-          button.className = 'absolute top-2 right-2 bg-indigo-600 text-white text-xs px-2 py-1 rounded shadow hover:bg-indigo-700 transition';
+        // Build Table of Contents
+        generateTOC(contenedor);
 
-          button.onclick = () => {
-            navigator.clipboard.writeText(block.textContent);
-            button.textContent = '✅ Copiado';
-            setTimeout(() => button.textContent = '📋 Copiar', 2000);
-          };
+        // Highlight backlinks/relations
+        generateBacklinks(currentNote);
 
-          pre.classList.add('relative', 'bg-slate-900', 'text-slate-100', 'p-4', 'rounded-lg', 'overflow-x-auto', 'mb-4');
-          pre.appendChild(button);
+        // Add code block copy buttons
+        contenedor.querySelectorAll('pre').forEach(pre => {
+          const code = pre.querySelector('code');
+          if (code) {
+            const button = document.createElement('button');
+            button.innerHTML = '<i data-lucide="copy" class="w-3.5 h-3.5"></i> <span class="hidden sm:inline ml-1">Copiar</span>';
+            button.className = "absolute top-3 right-3 bg-secondary/80 hover:bg-border text-foreground border border-border px-2 py-1 rounded text-xs flex items-center gap-1 transition-all font-medium";
+
+            button.onclick = () => {
+              navigator.clipboard.writeText(code.textContent);
+              button.innerHTML = '<i data-lucide="check" class="w-3.5 h-3.5 text-green-500"></i> <span class="hidden sm:inline ml-1 text-green-500">Copiado</span>';
+              lucide.createIcons();
+              setTimeout(() => {
+                button.innerHTML = '<i data-lucide="copy" class="w-3.5 h-3.5"></i> <span class="hidden sm:inline ml-1">Copiar</span>';
+                lucide.createIcons();
+              }, 2000);
+            };
+
+            pre.style.position = 'relative';
+            pre.appendChild(button);
+          }
         });
 
-        document.title = `📚 ${titulo}`;
-        if (sidebarVisible) toggleSidebar(); // Cierra sidebar en mobile
+        document.title = `📚 ${displayTitle} - Mis Notas`;
+        lucide.createIcons();
+        
+        // Scroll back to top
+        notePane.scrollTop = 0;
+
+        // Update selected node visually in vis.js graph if it exists
+        if (network) {
+          const idx = allFiles.findIndex(f => f.path.replace(/\.md$/, '') === currentNote);
+          if (idx !== -1) {
+            network.selectNodes([idx]);
+          }
+        }
+
+        // Hide mobile sidebar on selection
+        if (sidebarVisible) {
+          sidebarVisible = false;
+          sidebar.classList.add('-translate-x-full');
+        }
       } catch (error) {
         console.error('Error al cargar contenido:', error);
       }
     }
 
-    function toggleSidebar() {
-      sidebarVisible = !sidebarVisible;
-      sidebar.style.transform = sidebarVisible ? 'translateX(0)' : 'translateX(-100%)';
+    // Trigger note load from code or custom elements (e.g. wiki-links or graph click)
+    function cargarNotaPorTitulo(nombreNota) {
+      // Find note in allFiles (matching title or path)
+      const file = allFiles.find(f => {
+        const title = f.path.replace(/\.md$/, '');
+        return title === nombreNota || title.endsWith('/' + nombreNota) || title.split('/').pop() === nombreNota || (f.title && f.title === nombreNota);
+      });
+
+      if (file) {
+        const targetTitle = file.path.replace(/\.md$/, '');
+        // Highlight in sidebar list
+        document.querySelectorAll('#lista li').forEach(item => {
+          if (item.getAttribute('data-title') === targetTitle.toLowerCase() || item.querySelector('.note-title-text').textContent === file.title) {
+            item.classList.add('bg-accent/15', 'text-accent', 'font-medium', 'border-l-2', 'border-accent');
+            item.classList.remove('text-muted-foreground');
+          } else {
+            item.classList.remove('bg-accent/15', 'text-accent', 'font-medium', 'border-l-2', 'border-accent');
+            item.classList.add('text-muted-foreground');
+          }
+        });
+        const rawUrl = `https://raw.githubusercontent.com/${USER}/${REPO}/${BRANCH}/${file.path}`;
+        cargarContenido(rawUrl, file.title || targetTitle.split('/').pop(), file.path);
+      } else {
+        alert(`La nota "${nombreNota}" no se encontró.`);
+      }
     }
 
-    obtenerMD();
-  </script>
+    // Generate Table of Contents (TOC)
+    function generateTOC(container) {
+      tocList.innerHTML = '';
+      const headers = container.querySelectorAll('h1, h2, h3');
+      
+      if (headers.length === 0) {
+        tocList.innerHTML = '<li class="italic text-xs text-muted-foreground">Sin secciones</li>';
+        return;
+      }
 
+      headers.forEach((header, index) => {
+        const id = `heading-${index}`;
+        header.id = id;
+        
+        const li = document.createElement('li');
+        li.className = "cursor-pointer hover:text-foreground transition-all truncate";
+        
+        // Indentation level by tag name
+        if (header.tagName === 'H2') {
+          li.classList.add('pl-3');
+        } else if (header.tagName === 'H3') {
+          li.classList.add('pl-6');
+        }
+        
+        li.textContent = header.textContent;
+        li.onclick = () => {
+          header.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        };
+        
+        tocList.appendChild(li);
+      });
+    }
+
+    // Generate Backlinks / related files list
+    function generateBacklinks(titulo) {
+      backlinksList.innerHTML = '';
+      
+      // Simple backlinks based on title name references or keyword matching
+      const keywords = titulo.toLowerCase().split(/[\s\-_.]+/).filter(w => w.length > 2);
+      const relations = [];
+
+      allFiles.forEach(file => {
+        const otherTitle = file.path.replace(/\.md$/, '');
+        if (otherTitle !== titulo) {
+          const otherKeywords = otherTitle.toLowerCase().split(/[\s\-_.]+/).filter(w => w.length > 2);
+          const matches = keywords.filter(kw => otherKeywords.includes(kw));
+          if (matches.length > 1) {
+            relations.push(file);
+          }
+        }
+      });
+
+      if (relations.length === 0) {
+        backlinksList.innerHTML = '<li class="italic text-xs text-muted-foreground">Sin relaciones directas</li>';
+        return;
+      }
+
+      relations.slice(0, 5).forEach(file => {
+        const otherTitle = file.path.replace(/\.md$/, '');
+        const li = document.createElement('li');
+        li.className = "cursor-pointer text-xs hover:text-accent font-medium truncate flex items-center gap-1.5 transition-all";
+        li.innerHTML = `<i data-lucide="link-2" class="w-3.5 h-3.5 shrink-0 text-accent"></i> ${file.title || otherTitle.split('/').pop()}`;
+        li.onclick = () => cargarNotaPorTitulo(file.title || otherTitle);
+        backlinksList.appendChild(li);
+      });
+      lucide.createIcons();
+    }
+
+    // Build/Rebuild Interactive Vis.js Network Graph
+    function buildGraph() {
+      const isDarkMode = document.documentElement.classList.contains('dark');
+      
+      const nodes = [];
+      const edges = [];
+      const nodeMap = {};
+      const commonKeywords = {};
+
+      // Build node data & extract keywords
+      allFiles.forEach((file, idx) => {
+        const titulo = file.path.replace(/\.md$/, '');
+        nodeMap[titulo] = idx;
+        
+        const keywords = titulo.toLowerCase().split(/[\s\-_.]+/).filter(w => w.length > 2);
+        commonKeywords[idx] = keywords;
+        
+        const isCurrent = currentNote === titulo;
+        
+        nodes.push({
+          id: idx,
+          label: file.title || titulo.split('/').pop(),
+          title: file.title || titulo,
+          value: isCurrent ? 25 : 12,
+          color: {
+            background: isCurrent ? '#3b82f6' : (isDarkMode ? '#27272a' : '#e4e4e7'),
+            border: isCurrent ? '#60a5fa' : (isDarkMode ? '#3f3f46' : '#d4d4d8'),
+            highlight: {
+              background: '#3b82f6',
+              border: '#60a5fa'
+            }
+          },
+          font: {
+            color: isDarkMode ? '#e4e4e7' : '#27272a',
+            size: isCurrent ? 14 : 12,
+            face: 'JetBrains Mono'
+          }
+        });
+      });
+
+      // Connections set to prevent duplicates
+      const edgeSet = new Set();
+      
+      allFiles.forEach((file, idx) => {
+        const myKeywords = commonKeywords[idx];
+        
+        allFiles.forEach((otherFile, otherIdx) => {
+          if (idx !== otherIdx) {
+            const otherKeywords = commonKeywords[otherIdx];
+            const matches = myKeywords.filter(kw => otherKeywords.includes(kw));
+            
+            if (matches.length > 0) {
+              const edgeKey = [Math.min(idx, otherIdx), Math.max(idx, otherIdx)].join('-');
+              if (!edgeSet.has(edgeKey)) {
+                edgeSet.add(edgeKey);
+                edges.push({
+                  from: idx,
+                  to: otherIdx,
+                  color: { 
+                    color: isDarkMode ? '#3f3f46' : '#cbd5e1',
+                    highlight: '#3b82f6'
+                  },
+                  width: Math.min(matches.length * 1.2, 4),
+                  title: `Coincidencia: ${matches.join(', ')}`
+                });
+              }
+            }
+          }
+        });
+      });
+
+      // Network graph options
+      const container = document.getElementById('network');
+      const data = { nodes: new vis.DataSet(nodes), edges: new vis.DataSet(edges) };
+      const options = {
+        physics: {
+          enabled: true,
+          stabilization: { iterations: 150 },
+          barnesHut: { gravitationalConstant: -12000, centralGravity: 0.15, springLength: 120 }
+        },
+        nodes: {
+          shape: 'dot',
+          borderWidth: 1.5,
+          scaling: {
+            min: 10,
+            max: 30
+          }
+        },
+        edges: {
+          smooth: { type: 'continuous' }
+        },
+        interaction: { hover: true, keyboard: false }
+      };
+
+      network = new vis.Network(container, data, options);
+      
+      // Node click action
+      network.on('click', function(params) {
+        if (params.nodes.length > 0) {
+          const nodeId = params.nodes[0];
+          const file = allFiles[nodeId];
+          if (file) {
+            const targetTitle = file.path.replace(/\.md$/, '');
+            cargarNotaPorTitulo(file.title || targetTitle);
+          }
+        }
+      });
+    }
+
+    // Graph panel actions/toolbar controls
+    document.getElementById('zoomInBtn').addEventListener('click', () => {
+      if (network) network.moveTo({ scale: network.getScale() * 1.2 });
+    });
+
+    document.getElementById('zoomOutBtn').addEventListener('click', () => {
+      if (network) network.moveTo({ scale: network.getScale() * 0.8 });
+    });
+
+    document.getElementById('zoomFitBtn').addEventListener('click', () => {
+      if (network) network.fit();
+    });
+
+    // Run setup
+    obtenerMD();
+    
+    // Initialize lucide icons on load
+    window.addEventListener('DOMContentLoaded', () => {
+      lucide.createIcons();
+    });
+  </script>
 </body>
 </html>
